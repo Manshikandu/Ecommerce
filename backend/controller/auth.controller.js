@@ -141,7 +141,13 @@ try {
    }
  }
 
+ export const getProfile = async (req, res) => {
+	try {
+		res.json(req.user);
+	} catch (error) {
+		res.status(500).json({ message: "Server error", error: error.message });
+	}
+};
 
 
-
- //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2Nzg0YzdmZGU5NzEzOTQwYmUyMjg0MGYiLCJpYXQiOjE3MzY3NTYwOTksImV4cCI6MTczNjc1Njk5OX0.hXw0Xn-exLhDl3KdqEJiZI-bS3Uc2oB1viOSf
+ 
