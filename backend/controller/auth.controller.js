@@ -112,5 +112,36 @@ try {
 }
  }
 
+ export const refreshToken = async ( req,res) => {
+   try {
+      const refreshToken = req.cookies.refreshToken;
+      
+      if (!refreshToken){
+         return res.status(401).json({ message : "no refresh token provided"})
+      }
+      const decoded = jwt.verify(refreshToken,process.env.REFRESH_TOKEN_SECRET)
+      const storedToken = await redis.get(`refresh_token:${decoded.userId}`)
+
+      if(storedToken !==refreshToken){
+         return res.status(401).json({message: "Invalid refresh token"})
+      }
+      const accessToken = jwt.sign({ userId: decoded.userId}, process.env.ACCESS_TOKEN_SECRET,{ expiresIn: "15m"})
+      res.cookie("accessToken",accessToken,{
+      httpOnly : true,  //prevent xss attacks,cross site scripting attack
+      secure: process.env.NODE_ENV == "production",
+      sameSite : "strict", //prevents csrf attack,croos-site request forgery attack
+      maxAge: 15 * 60 * 10000,
+
+      
+       })
+       res.json({message: "Token refreshed sucessfully"})
+   } catch (error) {
+      console.log("Error in refreshToken controller",error.message)
+      res.status(500).json({ message : "server error",error: error.message})
+   }
+ }
 
 
+
+
+ //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2Nzg0YzdmZGU5NzEzOTQwYmUyMjg0MGYiLCJpYXQiOjE3MzY3NTYwOTksImV4cCI6MTczNjc1Njk5OX0.hXw0Xn-exLhDl3KdqEJiZI-bS3Uc2oB1viOSf
