@@ -4,14 +4,14 @@ import { stripe } from "../lib/stripe.js";
 import   Order  from "../models/order.model.js"
 export const createCheckoutSession = async (req,res) => {
     try {
-        const {products,couponcode} = req.body;
+        const {products,couponCode} = req.body;
         if(!Array.isArray(products) || products.length === 0){
             return res.status(400).json({ error: "invalid or empty products array"})
 
         }
         let totalAmount = 0;
-        const lineItems = products.map(product => {
-            const amount = product.price * 100  // stripe wants u to send in the format of cents
+        const lineItems = products.map((product => {
+            const amount = Math.round(product.price * 100) ; // stripe wants u to send in the format of cents
             totalAmount += amount * product.quantity
 
             return {
@@ -22,21 +22,22 @@ export const createCheckoutSession = async (req,res) => {
                         images:[product.image],
                     },
                     unit_amount: amount
-                }
+                },
+                quantity: product.quantity || 1,
             }
-        });
+        }))
 
         let coupon = null;
-        if(couponcode){
-            coupon = await Coupon.findOne({ code: couponcode,userId:req.user._id,isActive:true})
+        if(couponCode){
+            coupon = await Coupon.findOne({ code: couponCode,userId:req.user._id,isActive:true})
             if(coupon){
-                totalAmount = Math.round(totalAmount * coupon.discountPercentage /100)
+                totalAmount -= Math.round((totalAmount * coupon.discountPercentage) /100)
             }
         }
         const session = await stripe.checkout.sessions.create({
             line_items : lineItems,
             mode: "payment",
-            success_url : `${process.env.CLIENT_URL}/purchase-sucess?session_id={CHECKOUT_SESSION_ID}`,
+            success_url : `${process.env.CLIENT_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url : `${process.env.CLIENT_URL}/purchase-cancel`,
             discounts : coupon 
             ?[
@@ -47,7 +48,7 @@ export const createCheckoutSession = async (req,res) => {
          : [],
          metadata: {
             userId : req.user._id.toString(),
-            couponcode: couponcode || "",
+            couponCode: couponCode || "",
             products: JSON.stringify(
                 products.map((p) => ({
                     id: p._id,
