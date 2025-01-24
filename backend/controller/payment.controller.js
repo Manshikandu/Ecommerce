@@ -31,15 +31,16 @@ export const createCheckoutSession = async (req,res) => {
         if(couponCode){
             coupon = await Coupon.findOne({ code: couponCode,userId:req.user._id,isActive:true})
             if(coupon){
-                totalAmount -= Math.round((totalAmount * coupon.discountPercentage) /100)
+                totalAmount -= Math.round((totalAmount * coupon.discountPercentage) / 100)
             }
         }
         const session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
             line_items : lineItems,
             mode: "payment",
             success_url : `${process.env.CLIENT_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url : `${process.env.CLIENT_URL}/purchase-cancel`,
-            discounts : coupon 
+            discounts : coupon
             ?[
                 {
                  coupon: await createStripeCoupon ( coupon.discountPercentage),
@@ -62,7 +63,7 @@ export const createCheckoutSession = async (req,res) => {
     if(totalAmount >= 20000){
         await createNewCoupon(req.user._id)
     } 
-     res.status(200).json({ id :session.id,totalAmount : totalAmount/ 100})
+     res.status(200).json({ id :session.id,totalAmount : totalAmount / 100})
     } catch (error) {
         console.error("Error processing checkout:", error);
 		res.status(500).json({ message: "Error processing checkout", error: error.message })
@@ -124,7 +125,7 @@ async function createStripeCoupon(discountPercentage) {
 }
 
 async function createNewCoupon(userId) {
-	await Coupon.findOneAndDelete({ userId });
+	await Coupon.findOneAndDelete({ userId: userId });
 
 	const newCoupon = new Coupon({
 		code: "GIFT" + Math.random().toString(36).substring(2, 8).toUpperCase(),
