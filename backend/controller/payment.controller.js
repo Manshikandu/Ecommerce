@@ -11,7 +11,9 @@ export const createCheckoutSession = async (req,res) => {
         }
         let totalAmount = 0;
         const lineItems = products.map((product => {
+
             const amount = Math.round(product.price * 100) ; // stripe wants u to send in the format of cents
+            //const amount = product.price;
             totalAmount += amount * product.quantity
 
             return {
@@ -21,7 +23,7 @@ export const createCheckoutSession = async (req,res) => {
                         name: product.name,
                         images:[product.image],
                     },
-                    unit_amount: amount
+                    unit_amount: amount,
                 },
                 quantity: product.quantity || 1,
             }
@@ -138,3 +140,4 @@ async function createNewCoupon(userId) {
 
 	return newCoupon;
 }
+
